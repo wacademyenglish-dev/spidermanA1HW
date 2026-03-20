@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HOMEWORK | WOLFSTATION: Symbiote Threat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #050505;
+            --brand-accent: #00F0FF; 
+            --hp-red: #ff4d4d;
+            --success-green: #00F0FF; /* Using cyan for success in Wolfstation */
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-base); 
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
+        .title-font { font-family: 'Rajdhani', sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+        
+        .brand-cyan { color: var(--brand-accent); }
+        .bg-brand-cyan { background-color: var(--brand-accent); }
+        
+        /* SPECTRAL LAYER */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(0, 240, 255, 0.015), rgba(0, 0, 0, 0), rgba(255, 77, 77, 0.015));
+            z-index: 5;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .glass-card {
+            background: rgba(13, 13, 15, 0.95);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .option-btn {
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+            text-align: left;
+            width: 100%;
+            padding: 18px;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #b3b3b3;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .option-btn:hover:not(.locked) {
+            background: #1a1a1c;
+            color: white;
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+        
+        /* Feedback States */
+        .option-btn.correct {
+            background: rgba(0, 240, 255, 0.15) !important;
+            border-color: var(--brand-accent) !important;
+            color: var(--brand-accent) !important;
+            font-weight: 800;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+        .option-btn.wrong {
+            background: rgba(255, 77, 77, 0.15) !important;
+            border-color: var(--hp-red) !important;
+            color: var(--hp-red) !important;
+            box-shadow: 0 0 20px rgba(255, 77, 77, 0.2);
+        }
+
+        .step-card {
+            display: none;
+            animation: slideIn 0.4s ease-out forwards;
+            position: relative;
+            z-index: 10;
+        }
+        .step-card.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-container {
+            animation: slideDown 0.3s ease-out forwards;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-bar-container {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        #progress-fill {
+            height: 100%;
+            background: var(--brand-accent);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--brand-accent);
+        }
+
+        .crt-overlay {
+            position: absolute; inset: 0; 
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); 
+            background-size: 100% 4px; pointer-events: none; z-index: 5; 
+        }
+
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* Navigation Footer */
+        #nav-footer { position: relative; z-index: 100; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <div class="progress-bar-container">
+        <div id="progress-fill"></div>
+    </div>
+
+    <header class="pt-10 pb-4 px-6 text-center shrink-0 relative z-10">
+        <p class="text-[10px] font-black uppercase tracking-widest brand-cyan mb-1">Wolfstation Offline Core</p>
+        <h1 id="header-title" class="title-font text-5xl font-black tracking-wide uppercase text-white">Spider-Man</h1>
+    </header>
+
+    <main class="flex-grow px-6 flex items-center justify-center relative overflow-hidden">
+        
+        <!-- INTRO CARD -->
+        <div id="step-0" class="step-card active w-full max-w-md text-center space-y-8">
+            <div class="w-full h-56 mx-auto bg-[#111] rounded-2xl shadow-[0_0_40px_rgba(255,77,77,0.2)] overflow-hidden relative border border-[var(--hp-red)]/30 group">
+                <img src="https://images.unsplash.com/photo-1608889825103-eb5ed706fc64?w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-60 grayscale transition-transform duration-700 group-hover:scale-105">
+                <div class="crt-overlay"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fas fa-spider text-6xl text-[var(--hp-red)] drop-shadow-[0_0_20px_rgba(255,77,77,0.8)]"></i>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <h2 class="title-font text-6xl font-black tracking-wide uppercase leading-none text-white">Symbiote<br>Threat</h2>
+                <p class="text-[#888] text-sm font-bold tracking-widest uppercase mt-2">15 Tasks • Level A1</p>
+            </div>
+            <button onclick="nextStep()" class="w-full py-4 bg-brand-cyan text-black font-black uppercase tracking-widest rounded-xl text-lg shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:scale-105 transition-transform">
+                Initiate Sync
+            </button>
+        </div>
+
+        <!-- GRAMMAR (1-8) -->
+        <div id="step-1" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="0">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 1/8</span>
+            <p class="text-2xl font-bold leading-tight">I _____ Spider-Man.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">is</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <div id="step-2" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="1">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 2/8</span>
+            <p class="text-2xl font-bold leading-tight">He _____ my best friend.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">is</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <div id="step-3" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 3/8</span>
+            <p class="text-2xl font-bold leading-tight">We _____ a good team.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">is</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <div id="step-4" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 4/8</span>
+            <p class="text-2xl font-bold leading-tight">You _____ not yourself today.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">is</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <div id="step-5" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="0">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 5/8</span>
+            <p class="text-2xl font-bold leading-tight">We _____ fight the monster together.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">can</button>
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <div id="step-6" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="0">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 6/8</span>
+            <p class="text-2xl font-bold leading-tight">I _____ handle this problem alone. (Negative)</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">cannot</button>
+                <button class="option-btn" onclick="selectOption(this)">am not</button>
+                <button class="option-btn" onclick="selectOption(this)">can</button>
+            </div>
+        </div>
+
+        <div id="step-7" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 7/8</span>
+            <p class="text-2xl font-bold leading-tight">_____ you help me?</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">Am</button>
+                <button class="option-btn" onclick="selectOption(this)">Is</button>
+                <button class="option-btn" onclick="selectOption(this)">Can</button>
+            </div>
+        </div>
+
+        <div id="step-8" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Grammar Node 8/8</span>
+            <p class="text-2xl font-bold leading-tight">Peter and Miles _____ heroes.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">am</button>
+                <button class="option-btn" onclick="selectOption(this)">is</button>
+                <button class="option-btn" onclick="selectOption(this)">are</button>
+            </div>
+        </div>
+
+        <!-- VOCABULARY (9-15) -->
+        <div id="step-9" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="1">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 1/7</span>
+            <p class="text-2xl font-bold leading-tight">A very brave person who saves others is a _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">crazy</button>
+                <button class="option-btn" onclick="selectOption(this)">hero</button>
+                <button class="option-btn" onclick="selectOption(this)">building</button>
+            </div>
+        </div>
+
+        <div id="step-10" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="0">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 2/7</span>
+            <p class="text-2xl font-bold leading-tight">To make things easier or better for someone is to _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">help</button>
+                <button class="option-btn" onclick="selectOption(this)">handle</button>
+                <button class="option-btn" onclick="selectOption(this)">crazy</button>
+            </div>
+        </div>
+
+        <div id="step-11" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 3/7</span>
+            <p class="text-2xl font-bold leading-tight">Not normal; wild or dangerous means _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">hero</button>
+                <button class="option-btn" onclick="selectOption(this)">together</button>
+                <button class="option-btn" onclick="selectOption(this)">crazy</button>
+            </div>
+        </div>
+
+        <div id="step-12" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="1">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 4/7</span>
+            <p class="text-2xl font-bold leading-tight">With another person; not alone means _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">handle</button>
+                <button class="option-btn" onclick="selectOption(this)">together</button>
+                <button class="option-btn" onclick="selectOption(this)">crazy</button>
+            </div>
+        </div>
+
+        <div id="step-13" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="0">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 5/7</span>
+            <p class="text-2xl font-bold leading-tight">A tall place with many floors is a _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">building</button>
+                <button class="option-btn" onclick="selectOption(this)">hero</button>
+                <button class="option-btn" onclick="selectOption(this)">together</button>
+            </div>
+        </div>
+
+        <div id="step-14" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="1">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 6/7</span>
+            <p class="text-2xl font-bold leading-tight">To control a difficult situation is to _____ it.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">help</button>
+                <button class="option-btn" onclick="selectOption(this)">handle</button>
+                <button class="option-btn" onclick="selectOption(this)">building</button>
+            </div>
+        </div>
+
+        <div id="step-15" class="step-card w-full max-w-md glass-card p-8 space-y-6" data-type="choice" data-correct="2">
+            <span class="text-[10px] font-black uppercase tracking-widest brand-cyan mono-font">Vocab Node 7/7</span>
+            <p class="text-2xl font-bold leading-tight">The black suit makes Peter act _____.</p>
+            <div class="space-y-3 options-group">
+                <button class="option-btn" onclick="selectOption(this)">handle</button>
+                <button class="option-btn" onclick="selectOption(this)">together</button>
+                <button class="option-btn" onclick="selectOption(this)">crazy</button>
+            </div>
+        </div>
+
+        <!-- RESULT CARD -->
+        <div id="step-result" class="step-card w-full max-w-md text-center space-y-6 h-full overflow-y-auto pb-10">
+            <div class="w-20 h-20 bg-brand-cyan rounded-full flex items-center justify-center mx-auto text-black text-4xl shadow-[0_0_30px_rgba(0,240,255,0.4)] mt-4">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="space-y-1">
+                <h2 class="title-font text-5xl font-black tracking-wide uppercase text-white">Sync Complete</h2>
+                <p id="result-score" class="text-xl font-bold brand-cyan"></p>
+                <p class="text-[#888] text-sm">Screenshot this score and send it to command!</p>
+            </div>
+            
+            <div class="space-y-4 pt-4 border-t border-white/5">
+                <p class="text-[10px] font-black uppercase tracking-widest text-[#888] mb-2">Visual Intel Reward</p>
+                <div class="video-container w-full">
+                    <iframe src="https://www.youtube.com/embed/9fVYKsEmuRo?rel=0" frameborder="0" allowfullscreen></iframe>
+                </div>
+                
+                <button onclick="location.reload()" class="w-full py-3 bg-transparent text-white/50 font-bold uppercase tracking-widest rounded-xl text-xs hover:text-white transition-colors border border-white/10 hover:border-white/30 mt-4">
+                    Re-Sync Sequence
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Navigation Footer -->
+    <footer id="nav-footer" class="p-6 shrink-0 flex gap-4 max-w-md mx-auto w-full relative z-10">
+        <button id="prev-btn" onclick="prevStep()" class="flex-1 py-4 bg-[#111] border border-white/10 rounded-xl font-black uppercase tracking-widest text-[10px] hidden hover:bg-[#222] transition-colors">Back</button>
+        <button id="next-btn" onclick="nextStep()" class="flex-[2] py-4 bg-brand-cyan text-black rounded-xl font-black uppercase tracking-widest text-sm hidden hover:bg-cyan-400 transition-colors shadow-[0_0_15px_rgba(0,240,255,0.2)]">Next</button>
+    </footer>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 17; // Intro + 15 Questions + Result
+        let firstTryScore = 0;
+
+        function updateProgress() {
+            const percentage = (currentStep / (totalSteps - 1)) * 100;
+            document.getElementById('progress-fill').style.width = percentage + '%';
+        }
+
+        function selectOption(btn) {
+            const parentCard = btn.closest('.step-card');
+            
+            // If already answered correctly, ignore extra clicks
+            if (parentCard.classList.contains('answered')) return;
+
+            const correctIdx = parseInt(parentCard.getAttribute('data-correct'));
+            const options = Array.from(parentCard.querySelectorAll('.option-btn'));
+            const selectedIdx = options.indexOf(btn);
+
+            if (selectedIdx === correctIdx) {
+                // CORRECT
+                btn.classList.add('correct');
+                parentCard.classList.add('answered');
+                
+                // Fade out other options
+                options.forEach(b => {
+                    if (b !== btn) {
+                        b.style.opacity = '0.3';
+                        b.classList.remove('wrong');
+                        b.classList.add('cursor-default', 'pointer-events-none');
+                    }
+                });
+
+                // If correct on first try, add score
+                if (!parentCard.hasAttribute('data-mistake')) {
+                    firstTryScore++;
+                }
+
+                // Inject Immediate Feedback
+                let feedback = parentCard.querySelector('.feedback-container');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'feedback-container mt-6 p-4 bg-[var(--brand-accent)]/10 border border-[var(--brand-accent)]/30 rounded-xl text-center shadow-lg';
+                    
+                    const isLastQuestion = currentStep === totalSteps - 2;
+                    const nextText = isLastQuestion ? "VIEW RESULT" : "NEXT NODE";
+                    
+                    feedback.innerHTML = `
+                        <p class="text-[var(--brand-accent)] font-black uppercase tracking-widest text-xs mb-3">
+                            <i class="fas fa-check-circle mr-2"></i> Core Synchronized!
+                        </p>
+                        <button onclick="nextStep()" class="w-full py-3 bg-[var(--brand-accent)] text-black font-black uppercase tracking-[0.2em] rounded-lg text-sm hover:scale-105 transition-transform shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+                            ${nextText} <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    `;
+                    parentCard.appendChild(feedback);
+                }
+
+                updateUI(); 
+
+            } else {
+                // WRONG
+                btn.classList.add('wrong');
+                parentCard.setAttribute('data-mistake', 'true');
+            }
+        }
+
+        function nextStep() {
+            const steps = document.querySelectorAll('.step-card');
+            if (currentStep < steps.length - 1) {
+                steps[currentStep].classList.remove('active');
+                currentStep++;
+                steps[currentStep].classList.add('active');
+                
+                if (currentStep === steps.length - 1) {
+                    calculateResult();
+                }
+            }
+            updateUI();
+        }
+
+        function prevStep() {
+            const steps = document.querySelectorAll('.step-card');
+            if (currentStep > 0) {
+                steps[currentStep].classList.remove('active');
+                currentStep--;
+                steps[currentStep].classList.add('active');
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            
+            // Hide navigation at start or end
+            if (currentStep === 0 || currentStep === totalSteps - 1) {
+                nextBtn.classList.add('hidden');
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+                
+                // Show global "Next" only if the card is already correctly answered
+                const currentCard = document.getElementById('step-' + currentStep);
+                if (currentCard && currentCard.classList.contains('answered')) {
+                    nextBtn.classList.remove('hidden');
+                    nextBtn.innerText = currentStep === totalSteps - 2 ? "FINISH" : "NEXT";
+                } else {
+                    nextBtn.classList.add('hidden'); // Hide to force the correct answer
+                }
+            }
+            updateProgress();
+        }
+
+        function calculateResult() {
+            const questions = document.querySelectorAll('[data-type="choice"]');
+            document.getElementById('result-score').innerText = `You scored ${firstTryScore} out of ${questions.length} on the first try!`;
+        }
+
+        // Initialize progress
+        updateProgress();
+    </script>
+
+</body>
+</html>
